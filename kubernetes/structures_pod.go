@@ -211,6 +211,8 @@ func flattenPodSecurityContext(in *v1.PodSecurityContext) []interface{} {
 	}
 	if in.SeccompProfile != nil {
 		att["seccomp_profile"] = flattenSeccompProfile(in.SeccompProfile)
+	if in.FSGroupChangePolicy != nil {
+		att["fs_group_change_policy"] = *in.FSGroupChangePolicy
 	}
 	if len(in.SupplementalGroups) > 0 {
 		att["supplemental_groups"] = newInt64Set(schema.HashSchema(&schema.Schema{
@@ -898,7 +900,10 @@ func expandPodSecurityContext(l []interface{}) (*v1.PodSecurityContext, error) {
 	if v, ok := in["sysctl"].([]interface{}); ok && len(v) > 0 {
 		obj.Sysctls = expandSysctls(v)
 	}
-
+	if v, ok := in["fs_group_change_policy"].(string); ok && v != "" {
+		policy := v1.PodFSGroupChangePolicy(v)
+		obj.FSGroupChangePolicy = &policy
+	}
 	return obj, nil
 }
 
