@@ -4,6 +4,17 @@
 
 # Kubernetes Provider for Terraform [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-kubernetes?label=release)](https://github.com/hashicorp/terraform-provider-kubernetes/releases) [![license](https://img.shields.io/github/license/hashicorp/terraform-provider-kubernetes.svg)]()
 
+
+This repo is a fork of the terraform-provider-kubernetes. It only exists during
+the time required to review our feature. To publish the provider, we are using
+the
+[GoReleaser](https://www.terraform.io/docs/registry/providers/publishing.html#using-goreleaser-locally)
+to avoid any change in the upstream github workflows.
+
+<a href="https://terraform.io"> <img
+src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg"
+alt="Terraform logo" title="Terrafpr," align="right" height="50" /> </a>
+
 - [Getting Started](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started)
 - [Interactive Tutorial](https://learn.hashicorp.com/tutorials/terraform/kubernetes-provider?in=terraform/kubernetes)
 - Usage
@@ -16,7 +27,6 @@
 The Kubernetes provider for Terraform is a plugin that enables full lifecycle management of Kubernetes resources. This provider is maintained internally by HashiCorp.
 
 Please note: We take Terraform's security and our users' trust very seriously. If you believe you have found a security issue in the Terraform Kubernetes Provider, please responsibly disclose by contacting us at security@hashicorp.com.
-
 
 ## Requirements
 
