@@ -1678,14 +1678,17 @@ func testAccKubernetesPodConfigWithSecurityContextFSChangePolicy(podName, imageN
     }
     name = "%s"
   }
+
+
   spec {
     security_context {
-      fs_group            = 100
-      run_as_group        = 100
-      run_as_non_root     = true
-      run_as_user         = 101
-	  fs_group_change_policy = "OnRootMismatch"
+      fs_group               = 100
+      run_as_group           = 100
+      run_as_non_root        = true
+      run_as_user            = 101
+	    fs_group_change_policy = "OnRootMismatch"
     }
+
     container {
       image = "%s"
       name  = "containername"

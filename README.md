@@ -6,7 +6,7 @@
 
 
 This repo is a fork of the terraform-provider-kubernetes. It only exists during
-the time required to review our feature. To publish the provider, we are using
+the time required to review our feature. Ti publish the provider, we are using
 the
 [GoReleaser](https://www.terraform.io/docs/registry/providers/publishing.html#using-goreleaser-locally)
 to avoid any change in the upstream github workflows.
