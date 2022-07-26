@@ -7,7 +7,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-func flattenJobSpec(in batchv1.JobSpec, d *schema.ResourceData, prefix ...string) ([]interface{}, error) {
+func flattenJobSpec(in batchv1.JobSpec, d *schema.ResourceData, meta interface{}, prefix ...string) ([]interface{}, error) {
 	att := make(map[string]interface{})
 
 	if in.ActiveDeadlineSeconds != nil {
@@ -20,6 +20,10 @@ func flattenJobSpec(in batchv1.JobSpec, d *schema.ResourceData, prefix ...string
 
 	if in.Completions != nil {
 		att["completions"] = *in.Completions
+	}
+
+	if in.CompletionMode != nil {
+		att["completion_mode"] = string(*in.CompletionMode)
 	}
 
 	if in.ManualSelector != nil {
@@ -44,7 +48,7 @@ func flattenJobSpec(in batchv1.JobSpec, d *schema.ResourceData, prefix ...string
 		delete(labels, "job-name")
 	}
 
-	podSpec, err := flattenPodTemplateSpec(in.Template, d, prefix...)
+	podSpec, err := flattenPodTemplateSpec(in.Template, d, meta, prefix...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +82,11 @@ func expandJobSpec(j []interface{}) (batchv1.JobSpec, error) {
 		obj.Completions = ptrToInt32(int32(v))
 	}
 
+	if v, ok := in["completion_mode"].(string); ok && v != "" {
+		m := batchv1.CompletionMode(v)
+		obj.CompletionMode = &m
+	}
+
 	if v, ok := in["manual_selector"]; ok {
 		obj.ManualSelector = ptrToBool(v.(bool))
 	}
@@ -97,7 +106,7 @@ func expandJobSpec(j []interface{}) (batchv1.JobSpec, error) {
 	obj.Template = *template
 
 	if v, ok := in["ttl_seconds_after_finished"].(string); ok && v != "" {
-		i, err := strconv.Atoi(v)
+		i, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			return obj, err
 		}

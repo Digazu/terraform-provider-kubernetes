@@ -1,3 +1,155 @@
+## 2.13.0
+
+* Add Acceptance Tests (GKE) to Github Actions
+
+## 2.12.1 (July 6, 2022)
+
+IMPROVEMENTS:
+
+* Update documentation and correct some errors (#1759)
+
+BUG FIXES:
+
+* Fix type morphing of nested tuples that causes `Failed to morph` errors (#1756)
+* Fix an issue when provider crashes intermittently in version `v2.12.0` (#1762)
+
+## 2.12.0 (June 30, 2022)
+
+NEW:
+
+* Attribute `ignore_annotations` of `provider` (#746)
+* Attribute `ignore_labels` of `provider` (#746)
+* Attribute `condition` to `wait` block of `kubernetes_manifest` (#1595)
+* Attribute `allocate_load_balancer_node_ports` of `kubernetes_service(_v1)` (#1683)
+* Attribute `cluster_ips` of `kubernetes_service(_v1)` (#1683)
+* Attribute `internal_traffic_policy` of `kubernetes_service(_v1)` (#1683)
+* Attribute `load_balancer_class` of `kubernetes_service(_v1)` (#1683)
+* Attribute `session_affinity_config` of `kubernetes_service(_v1)` (#1683)
+
+IMPROVEMENTS:
+
+* Update documentation and correct some errors (#1706, #1708)
+* Fix security scan alerts (#1727, #1730, #1731)
+* Attribute `topology_key` of `kubernetes_deployment(_v1)` marked as `Required` (#1736)
+
+BUG FIXES:
+
+* Fix `kubernetes_default_service_account` doesn't set the `automount_service_account_token` to `false` (#1247)
+* Fix an issue when the imported `kubernetes_manifest` resource is replaced instead of getting updated (#1712)
+* Fix provider crash when `image_pull_secret` of `kubernetes_service_account(_v1)` is `null`
+
+## 2.11.0 (April 27, 2022)
+
+NEW:
+
+* Add a new resource `kubernetes_horizontal_pod_autoscaler_v2` (#1674)
+
+IMPROVEMENTS:
+
+* Add `ip_families` and `ip_family_policy` attributes to `kubernetes_service` (#1662)
+* Handle `x-kubernetes-preserve-unknown-fields` type annotation from OpenAPI: changes to attributes of this type trigger whole resource recreation. (#1646)
+* Upgrade terraform-plugin-mux to v0.6.0 (#1686)
+* Add GitHub action for EKS acceptance tests (#1656)
+* Add github action for acceptance tests using kind (#1691)
+
+BUG FIXES:
+
+* Fix conversion of big.Float to float64 in `kubernetes_manifest` (#1661)
+* Fix identification of `int-or-string` type attributes to include 3rd party types defined by aggregated APIs (#1640)
+* Fix not handling multiple `cluster_role_selectors` of `kubernetes_cluster_role(_v1)` (#1360)
+
+## 2.10.0 (April 7, 2022)
+
+NEW:
+
+* Resource `kubernetes_labels` (#692)
+* Resource `kubernetes_annotations` (#692)
+* Resource `kubernetes_config_map_v1_data` (#723)
+* Block `wait` with attribute `rollout` of `kubernetes_manifest` (#1549)
+* Data source and resource attributes `app_protocol` of `kubernetes_service` (#1554)
+* Attribute `container_resource` of resource `kubernetes_horizontal_pod_autoscaler_v2beta2` (#1637)
+
+IMPROVEMENTS:
+
+* Deprecate `wait_for` attribute in favor of `wait` block in `kubernetes_manifest` (#1549)
+* Make attribute `rule` optional of `kubernetes_validating_webhook_configuration(_v1)` and `kubernetes_mutating_webhook_configuration(_v1)` (#1618, #1643)
+* Update documentation and correct some errors (#1622, #1628, #1657, #1681)
+
+BUG FIXES:
+
+* Fix crash when multiple `match_expression` are used in `kubernetes_resource_quota` (#1561)
+* Fix issue when in some circumstances changes of `seLinuxOptions.Type` doesn't reflect in the state file (#1650)
+* Ignore service account volumes with `kube-api-access` prefix (#1663)
+
+## 2.9.0 (March 17, 2022)
+
+IMPROVEMENTS:
+
+* Add attribute `csi` to pod spec (#1092)
+* Add `kubernetes_resource` data source (#1548)
+* `kubernetes_manifest` resource force the re-creation of the resource when either `apiVersion` or `kind` attributes change (#1593)
+* Make attribute `http` of resource `kubernetes_ingress_v1` optional (#1613)
+* Add a new attribute `seccomp_profile` to pod and container spec (#1617)
+* Add additional check to resource `kubernetes_job_v1` when attributes `wait_for_completion` and `ttl_seconds_after_finished` are used together (#1619)
+* Update documentation examples and correct some errors (#1597, #1611, #1612, #1626)
+
+BUG FIXES:
+
+* Fix logic of `wait_for_rollout` attribute of `kubernetes_deployment` (#1405)
+* Fix fail when the provider cannot determine `default_secret_name` (#1634)
+
+## 2.8.0 (February 09, 2022)
+
+IMPROVEMENTS:
+
+* Add mutating_webhook_configuration_v1 data source (#1423)
+* Remove enabling experiment section (#1564)
+* Update kubernetes dependencies (#1574)
+* Update terraform-plugin-go and terraform-plugin-sdk (#1551)
+
+BUG FIXES:
+
+* Fix `panic: lists must only contain one type of element` errors on `kubernetes_manifest`
+* Attribute `backend.service.port.name` in `kubernetes_ingress_v1` should be type String  (#1541)
+
+## 2.7.1 (December 06, 2021)
+
+BUG FIXES:
+* Fix type-morphing of Map into Map (#1521)
+
+## 2.7.0 (November 30, 2021)
+
+IMPROVEMENTS:
+* Add support for storage/v1
+* Add support for certificates/v1
+* Add support for networking/v1
+* Add support for policy/v1
+* Add `completion_mode` to job spec 
+* Improve performance of `kubernetes_manifest` by reducing amount of API calls
+
+BUG FIXES:
+* Fix crash when container env block is empty 
+* Fix invalid allowedHostPaths PodSecurityPolicy patch 
+* Fix handling of "null" values on fields of `kubernetes_manifest` (#1478)
+
+This release introduces version suffixes to the names of resources and datasources. See our [documentation page](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/versioned-resources) for more details on this convention and the motivation behind it.   
+
+## 2.6.1 (October 22, 2021)
+
+BUG FIXES:
+  * Fix import ID syntax in manifest import docs
+  * Tolerate unknown values in "env" and "exec" provider attributes
+  * Remove "beta" designation of the kubernetes_manifest from documentation
+
+## 2.6.0 (October 19, 2021)
+
+IMPROVEMENTS:
+* kubernetes_manifest is now GA and enabled by default
+
+BUG FIXES:
+* kubernetes_manifest now correctly handles empty blocks as attribute values (#1352)
+* kubernetes_manifest now correctly handles multiple CRDs with different number of schema versions (#1460)
+
 ## 2.5.1 (October 14, 2021)
 
 IMPROVEMENTS:

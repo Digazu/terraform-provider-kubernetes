@@ -1,12 +1,13 @@
 package kubernetes
 
 import (
+	"regexp"
 	"strconv"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"regexp"
 )
 
 func flattenCapability(in []v1.Capability) []string {
@@ -41,6 +42,9 @@ func flattenContainerSecurityContext(in *v1.SecurityContext) []interface{} {
 	if in.RunAsUser != nil {
 		att["run_as_user"] = strconv.Itoa(int(*in.RunAsUser))
 	}
+	if in.SeccompProfile != nil {
+		att["seccomp_profile"] = flattenSeccompProfile(in.SeccompProfile)
+	}
 	if in.SELinuxOptions != nil {
 		att["se_linux_options"] = flattenSeLinuxOptions(in.SELinuxOptions)
 	}
@@ -61,7 +65,7 @@ func flattenSecurityCapabilities(in *v1.Capabilities) []interface{} {
 	return []interface{}{att}
 }
 
-func flattenHandler(in *v1.Handler) []interface{} {
+func flattenLifecycleHandler(in *v1.LifecycleHandler) []interface{} {
 	att := make(map[string]interface{})
 
 	if in.Exec != nil {
@@ -130,10 +134,10 @@ func flattenLifeCycle(in *v1.Lifecycle) []interface{} {
 	att := make(map[string]interface{})
 
 	if in.PostStart != nil {
-		att["post_start"] = flattenHandler(in.PostStart)
+		att["post_start"] = flattenLifecycleHandler(in.PostStart)
 	}
 	if in.PreStop != nil {
-		att["pre_stop"] = flattenHandler(in.PreStop)
+		att["pre_stop"] = flattenLifecycleHandler(in.PreStop)
 	}
 
 	return []interface{}{att}
@@ -414,7 +418,7 @@ func flattenContainers(in []v1.Container, serviceAccountRegex string) ([]interfa
 				if err != nil {
 					return att, err
 				}
-				if nameMatchesDefaultToken {
+				if nameMatchesDefaultToken || strings.HasPrefix(m.Name, "kube-api-access") {
 					v.VolumeMounts = removeVolumeMountFromContainer(num, v.VolumeMounts)
 					break
 				}
@@ -616,6 +620,9 @@ func expandContainerSecurityContext(l []interface{}) (*v1.SecurityContext, error
 		}
 		obj.RunAsUser = ptrToInt64(int64(i))
 	}
+	if v, ok := in["seccomp_profile"].([]interface{}); ok && len(v) > 0 {
+		obj.SeccompProfile = expandSeccompProfile(v)
+	}
 	if v, ok := in["se_linux_options"].([]interface{}); ok && len(v) > 0 {
 		obj.SELinuxOptions = expandSeLinuxOptions(v)
 	}
@@ -718,12 +725,12 @@ func expandProbe(l []interface{}) *v1.Probe {
 	return &obj
 }
 
-func expandHandlers(l []interface{}) *v1.Handler {
+func expandLifecycleHandlers(l []interface{}) *v1.LifecycleHandler {
 	if len(l) == 0 || l[0] == nil {
-		return &v1.Handler{}
+		return &v1.LifecycleHandler{}
 	}
 	in := l[0].(map[string]interface{})
-	obj := v1.Handler{}
+	obj := v1.LifecycleHandler{}
 	if v, ok := in["exec"].([]interface{}); ok && len(v) > 0 {
 		obj.Exec = expandExec(v)
 	}
@@ -743,10 +750,10 @@ func expandLifeCycle(l []interface{}) *v1.Lifecycle {
 	in := l[0].(map[string]interface{})
 	obj := &v1.Lifecycle{}
 	if v, ok := in["post_start"].([]interface{}); ok && len(v) > 0 {
-		obj.PostStart = expandHandlers(v)
+		obj.PostStart = expandLifecycleHandlers(v)
 	}
 	if v, ok := in["pre_stop"].([]interface{}); ok && len(v) > 0 {
-		obj.PreStop = expandHandlers(v)
+		obj.PreStop = expandLifecycleHandlers(v)
 	}
 	return obj
 }
@@ -782,22 +789,28 @@ func expandContainerEnv(in []interface{}) ([]v1.EnvVar, error) {
 	if len(in) == 0 {
 		return []v1.EnvVar{}, nil
 	}
-	envs := make([]v1.EnvVar, len(in))
-	for i, c := range in {
-		p := c.(map[string]interface{})
+	envs := []v1.EnvVar{}
+	for _, c := range in {
+		p, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		env := v1.EnvVar{}
 		if name, ok := p["name"]; ok {
-			envs[i].Name = name.(string)
+			env.Name = name.(string)
 		}
 		if value, ok := p["value"]; ok {
-			envs[i].Value = value.(string)
+			env.Value = value.(string)
 		}
 		if v, ok := p["value_from"].([]interface{}); ok && len(v) > 0 {
 			var err error
-			envs[i].ValueFrom, err = expandEnvValueFrom(v)
+			env.ValueFrom, err = expandEnvValueFrom(v)
 			if err != nil {
 				return envs, err
 			}
 		}
+		envs = append(envs, env)
 	}
 	return envs, nil
 }

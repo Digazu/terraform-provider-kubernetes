@@ -13,7 +13,7 @@ func ValueToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (tft
 		return tftypes.Value{}, p.NewErrorf("type is nil")
 	}
 	if v.IsNull() {
-		return v, nil
+		return tftypes.NewValue(t, nil), nil
 	}
 	switch {
 	case v.Type().Is(tftypes.String):
@@ -108,22 +108,30 @@ func morphStringToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath
 }
 
 func morphListToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (tftypes.Value, error) {
-	if t.Is(tftypes.List{}) {
-		return v, nil
-	}
 	var lvals []tftypes.Value
 	err := v.As(&lvals)
 	if err != nil {
 		return tftypes.Value{}, p.NewErrorf("[%s] failed to morph list value: %s", p.String(), err)
 	}
 	switch {
+	case t.Is(tftypes.List{}):
+		var nlvals []tftypes.Value = make([]tftypes.Value, len(lvals))
+		for i, v := range lvals {
+			elp := p.WithElementKeyInt(i)
+			nv, err := ValueToType(v, t.(tftypes.List).ElementType, elp)
+			if err != nil {
+				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph list element into list element: %v", elp.String(), err)
+			}
+			nlvals[i] = nv
+		}
+		return tftypes.NewValue(t, nlvals), nil
 	case t.Is(tftypes.Tuple{}):
 		if len(t.(tftypes.Tuple).ElementTypes) != len(lvals) {
 			return tftypes.Value{}, p.NewErrorf("[%s] failed to morph list into tuple (length mismatch)", p.String())
 		}
 		var tvals []tftypes.Value = make([]tftypes.Value, len(lvals))
 		for i, v := range lvals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.Tuple).ElementTypes[i], elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph list element into tuple element: %v", elp.String(), err)
@@ -134,7 +142,7 @@ func morphListToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) 
 	case t.Is(tftypes.Set{}):
 		var svals []tftypes.Value = make([]tftypes.Value, len(lvals))
 		for i, v := range lvals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.Set).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph list element into set element: %v", elp.String(), err)
@@ -172,18 +180,19 @@ func morphTupleIntoType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePat
 			}
 		}
 		for i, v := range tvals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, eltypes[i], elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph tuple element into tuple element: %v", elp.String(), err)
 			}
 			lvals[i] = nv
+			eltypes[i] = nv.Type()
 		}
 		return tftypes.NewValue(tftypes.Tuple{ElementTypes: eltypes}, lvals), nil
 	case t.Is(tftypes.List{}):
 		var lvals []tftypes.Value = make([]tftypes.Value, len(tvals))
 		for i, v := range tvals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.List).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph tuple element into list element: %v", elp.String(), err)
@@ -194,7 +203,7 @@ func morphTupleIntoType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePat
 	case t.Is(tftypes.Set{}):
 		var svals []tftypes.Value = make([]tftypes.Value, len(tvals))
 		for i, v := range tvals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.Set).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph tuple element into set element: %v", elp.String(), err)
@@ -209,19 +218,27 @@ func morphTupleIntoType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePat
 }
 
 func morphSetToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (tftypes.Value, error) {
-	if t.Is(tftypes.Set{}) {
-		return v, nil
-	}
 	var svals []tftypes.Value
 	err := v.As(&svals)
 	if err != nil {
 		return tftypes.Value{}, p.NewErrorf("[%s] failed to morph set value: %v", p.String(), err)
 	}
 	switch {
+	case t.Is(tftypes.Set{}):
+		var svals []tftypes.Value = make([]tftypes.Value, len(svals))
+		for i, v := range svals {
+			elp := p.WithElementKeyInt(i)
+			nv, err := ValueToType(v, t.(tftypes.Set).ElementType, elp)
+			if err != nil {
+				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph set element into set element : %v", elp.String(), err)
+			}
+			svals[i] = nv
+		}
+		return tftypes.NewValue(t, svals), nil
 	case t.Is(tftypes.List{}):
 		var lvals []tftypes.Value = make([]tftypes.Value, len(svals))
 		for i, v := range svals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.List).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph set element into list element : %v", elp.String(), err)
@@ -235,7 +252,7 @@ func morphSetToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (
 		}
 		var tvals []tftypes.Value = make([]tftypes.Value, len(svals))
 		for i, v := range svals {
-			elp := p.WithElementKeyInt(int64(i))
+			elp := p.WithElementKeyInt(i)
 			nv, err := ValueToType(v, t.(tftypes.Tuple).ElementTypes[i], elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph list element into tuple element: %v", elp.String(), err)
@@ -250,9 +267,6 @@ func morphSetToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (
 }
 
 func morphMapToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (tftypes.Value, error) {
-	if t.Is(tftypes.Map{}) {
-		return v, nil
-	}
 	var mvals map[string]tftypes.Value
 	err := v.As(&mvals)
 	if err != nil {
@@ -271,16 +285,16 @@ func morphMapToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath) (
 		}
 		return tftypes.NewValue(t, ovals), nil
 	case t.Is(tftypes.Map{}):
-		var mvals map[string]tftypes.Value = make(map[string]tftypes.Value, len(mvals))
+		var nmvals map[string]tftypes.Value = make(map[string]tftypes.Value, len(mvals))
 		for k, v := range mvals {
 			elp := p.WithElementKeyString(k)
-			nv, err := ValueToType(v, t.(tftypes.Map).AttributeType, elp)
+			nv, err := ValueToType(v, t.(tftypes.Map).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph object element into map element: %v", elp.String(), err)
 			}
-			mvals[k] = nv
+			nmvals[k] = nv
 		}
-		return tftypes.NewValue(t, mvals), nil
+		return tftypes.NewValue(t, nmvals), nil
 	case t.Is(tftypes.DynamicPseudoType):
 		return v, nil
 	}
@@ -320,7 +334,7 @@ func morphObjectToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath
 		var mvals map[string]tftypes.Value = make(map[string]tftypes.Value, len(vals))
 		for k, v := range vals {
 			elp := p.WithElementKeyString(k)
-			nv, err := ValueToType(v, t.(tftypes.Map).AttributeType, elp)
+			nv, err := ValueToType(v, t.(tftypes.Map).ElementType, elp)
 			if err != nil {
 				return tftypes.Value{}, elp.NewErrorf("[%s] failed to morph object element into map element: %v", elp.String(), err)
 			}
@@ -331,4 +345,26 @@ func morphObjectToType(v tftypes.Value, t tftypes.Type, p *tftypes.AttributePath
 		return v, nil
 	}
 	return tftypes.Value{}, p.NewErrorf("[%s] unsupported morph of object value into type: %s", p.String(), t.String())
+}
+
+// ValueToTypePath "normalizes" AttributePaths of values into a form that only describes the type hyerarchy.
+// this is used when comparing value paths to type hints generated during the translation from OpenAPI into tftypes.
+func ValueToTypePath(a *tftypes.AttributePath) *tftypes.AttributePath {
+	if a == nil {
+		return nil
+	}
+	ns := make([]tftypes.AttributePathStep, len(a.Steps()))
+	os := a.Steps()
+	for i := range os {
+		switch os[i].(type) {
+		case tftypes.AttributeName:
+			ns[i] = tftypes.AttributeName(os[i].(tftypes.AttributeName))
+		case tftypes.ElementKeyString:
+			ns[i] = tftypes.ElementKeyString("#")
+		case tftypes.ElementKeyInt:
+			ns[i] = tftypes.ElementKeyInt(-1)
+		}
+	}
+
+	return tftypes.NewAttributePathWithSteps(ns)
 }

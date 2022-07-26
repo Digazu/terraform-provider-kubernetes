@@ -17,7 +17,10 @@ func TestAccKubernetesIngress_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			skipIfClusterVersionGreaterThanOrEqual(t, "1.22.0")
+		},
 		IDRefreshName:     "kubernetes_ingress.test",
 		ProviderFactories: testAccProviderFactories,
 		CheckDestroy:      testAccCheckKubernetesIngressDestroy,
@@ -68,7 +71,10 @@ func TestAccKubernetesIngress_TLS(t *testing.T) {
 	name := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			skipIfClusterVersionGreaterThanOrEqual(t, "1.22.0")
+		},
 		IDRefreshName:     "kubernetes_ingress.test",
 		ProviderFactories: testAccProviderFactories,
 		CheckDestroy:      testAccCheckKubernetesIngressDestroy,
@@ -111,7 +117,10 @@ func TestAccKubernetesIngress_InternalKey(t *testing.T) {
 	name := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			skipIfClusterVersionGreaterThanOrEqual(t, "1.22.0")
+		},
 		IDRefreshName:     "kubernetes_ingress.test",
 		IDRefreshIgnore:   []string{"metadata.0.resource_version"},
 		ProviderFactories: testAccProviderFactories,
@@ -153,7 +162,11 @@ func TestAccKubernetesIngress_WaitForLoadBalancerGoogleCloud(t *testing.T) {
 	name := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); skipIfNotRunningInGke(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			skipIfClusterVersionGreaterThanOrEqual(t, "1.22.0")
+			skipIfNotRunningInGke(t)
+		},
 		IDRefreshName:     "kubernetes_ingress.test",
 		ProviderFactories: testAccProviderFactories,
 		CheckDestroy:      testAccCheckKubernetesIngressDestroy,
@@ -163,33 +176,6 @@ func TestAccKubernetesIngress_WaitForLoadBalancerGoogleCloud(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckKubernetesIngressExists("kubernetes_ingress.test", &conf),
 					resource.TestCheckResourceAttrSet("kubernetes_ingress.test", "status.0.load_balancer.0.ingress.0.ip"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccKubernetesIngress_stateUpgradeV0_loadBalancerIngress(t *testing.T) {
-	var conf1, conf2 api.Ingress
-	name := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); skipIfNotRunningInEks(t) },
-		ExternalProviders: testAccExternalProviders,
-		IDRefreshName:     "kubernetes_ingress.test",
-		CheckDestroy:      testAccCheckKubernetesIngressDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: requiredProviders() + testAccKubernetesIngressConfig_stateUpgradev0("kubernetes-released", name),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckKubernetesIngressExists("kubernetes_ingress.test", &conf1),
-				),
-			},
-			{
-				Config: requiredProviders() + testAccKubernetesIngressConfig_stateUpgradev0("kubernetes-local", name),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckKubernetesIngressExists("kubernetes_ingress.test", &conf2),
-					testAccCheckKubernetesIngressForceNew(&conf1, &conf2, false),
 				),
 			},
 		},
