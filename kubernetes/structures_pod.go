@@ -211,6 +211,7 @@ func flattenPodSecurityContext(in *v1.PodSecurityContext) []interface{} {
 	}
 	if in.SeccompProfile != nil {
 		att["seccomp_profile"] = flattenSeccompProfile(in.SeccompProfile)
+	}
 	if in.FSGroupChangePolicy != nil {
 		att["fs_group_change_policy"] = *in.FSGroupChangePolicy
 	}
